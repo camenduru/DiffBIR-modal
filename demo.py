@@ -1,10 +1,9 @@
 import modal, os, sys, shlex
 
 stub = modal.Stub("DiffBIR")
-stub.volume = modal.Volume.persisted("DiffBIR")
+volume = modal.NetworkFileSystem.persisted("DiffBIR")
 
 @stub.function(
-    volumes={"/content": stub.volume},
     image=modal.Image.from_registry("nvidia/cuda:12.2.0-base-ubuntu22.04", add_python="3.11")
     .run_commands(
         "apt update -y && \
@@ -20,18 +19,20 @@ stub.volume = modal.Volume.persisted("DiffBIR")
         pip install -q einops pytorch_lightning gradio omegaconf transformers lpips opencv-python && \
         pip install -q git+https://github.com/mlfoundations/open_clip@v2.20.0"
     ),
-    gpu="A10G",
+    network_file_systems={"/content": volume},
     timeout=60000,
 )
 async def run():
-    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/camenduru/DiffBIR/resolve/main/general_full_v1.ckpt -d /content/DiffBIR/models -o general_full_v1.ckpt")
-    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/camenduru/DiffBIR/resolve/main/general_swinir_v1.ckpt -d /content/DiffBIR/models -o general_swinir_v1.ckpt")
     os.environ['HF_HOME'] = '/content/cache/huggingface'
     os.system(f"git clone -b dev https://github.com/camenduru/DiffBIR /content/DiffBIR")
     os.chdir(f"/content/DiffBIR")
     os.system(f"git pull")
     os.system(f"git reset --hard")
-    stub.volume.commit()
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/camenduru/DiffBIR/resolve/main/general_full_v1.ckpt -d /test -o general_full_v1.ckpt")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/camenduru/DiffBIR/resolve/main/general_swinir_v1.ckpt -d /test -o general_swinir_v1.ckpt")
+    os.system(f"mkdir -p /content/DiffBIR/models")
+    os.system(f"mv /test/general_full_v1.ckpt /content/DiffBIR/models/general_full_v1.ckpt")
+    os.system(f"mv /test/general_swinir_v1.ckpt /content/DiffBIR/models/general_swinir_v1.ckpt")
     os.system(f"python gradio_diffbir.py --ckpt /content/DiffBIR/models/general_full_v1.ckpt --config /content/DiffBIR/configs/model/cldm.yaml --reload_swinir --swinir_ckpt /content/DiffBIR/models/general_swinir_v1.ckpt")
 
 @stub.local_entrypoint()
