@@ -25,7 +25,7 @@ volume = modal.NetworkFileSystem.new().persisted("DiffBIR")
 )
 async def run():
     os.environ['HF_HOME'] = '/content/cache/huggingface'
-    os.system(f"git clone -b openxlab https://github.com/camenduru/DiffBIR /content/DiffBIR")
+    os.system(f"git clone -b dev https://github.com/camenduru/DiffBIR /content/DiffBIR")
     os.chdir(f"/content/DiffBIR")
     os.system(f"git pull")
     os.system(f"git reset --hard")
