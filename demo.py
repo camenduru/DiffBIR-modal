@@ -20,6 +20,7 @@ volume = modal.NetworkFileSystem.persisted("DiffBIR")
         pip install -q git+https://github.com/mlfoundations/open_clip@v2.20.0"
     ),
     network_file_systems={"/content": volume},
+    gpu="A10G",
     timeout=60000,
 )
 async def run():
